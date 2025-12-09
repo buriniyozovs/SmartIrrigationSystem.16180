@@ -440,7 +440,7 @@
       const db = firebase.database()
       const ref = db.ref('smart_irrigation')
 
-      const connectedRef = database.ref('.info/connected')
+      const connectedRef = db.ref('.info/connected')
       connectedRef.on('value', (snap) => {
         const statusEl = document.getElementById('connectionStatus')
         if (snap.val() === true) {
