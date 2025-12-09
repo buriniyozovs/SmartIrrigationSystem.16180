@@ -249,6 +249,60 @@
         font-weight: bold;
         margin-top: 10px;
       }
+
+      .analytics-box {
+        background: #f9fafb;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+        text-align: center;
+        transition: transform 0.25s ease;
+      }
+
+      .analytics-box:hover {
+        transform: translateY(-5px);
+      }
+
+      .analytics-label {
+        font-size: 0.9em;
+        color: #666;
+        margin-bottom: 8px;
+      }
+
+      .analytics-value {
+        font-size: 1.8em;
+        font-weight: bold;
+        color: #667eea;
+        margin-bottom: 8px;
+      }
+
+      .analytics-status {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-weight: bold;
+      }
+
+      .badge-good {
+        background: #10b981;
+        color: white;
+      }
+
+      .badge-warning {
+        background: #f59e0b;
+        color: white;
+      }
+
+      .badge-danger {
+        background: #ef4444;
+        color: white;
+      }
+
+      .badge-info {
+        background: #3b82f6;
+        color: white;
+      }
     </style>
   </head>
 
@@ -289,6 +343,52 @@
           >
             🔴 Force OFF
           </button>
+        </div>
+      </div>
+
+      <!-- ANALYTICS SECTION -->
+      <div class="card" style="margin-bottom: 30px">
+        <div class="card-header">
+          <div class="card-icon">📊</div>
+          <div class="card-title">System Analytics</div>
+        </div>
+
+        <div
+          class="analytics-grid"
+          style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-top: 10px;
+          "
+        >
+          <!-- Soil Moisture -->
+          <div class="analytics-box">
+            <div class="analytics-label">Soil Moisture</div>
+            <div class="analytics-value" id="analyticsSoil">---</div>
+            <div class="analytics-status" id="analyticsSoilStatus">---</div>
+          </div>
+
+          <!-- Water Tank -->
+          <div class="analytics-box">
+            <div class="analytics-label">Water Tank Level</div>
+            <div class="analytics-value" id="analyticsWater">---</div>
+            <div class="analytics-status" id="analyticsWaterStatus">---</div>
+          </div>
+
+          <!-- Rain Probability -->
+          <div class="analytics-box">
+            <div class="analytics-label">Rain Indicator</div>
+            <div class="analytics-value" id="analyticsRain">---</div>
+            <div class="analytics-status" id="analyticsRainStatus">---</div>
+          </div>
+
+          <!-- Pump Usage -->
+          <div class="analytics-box">
+            <div class="analytics-label">Pump</div>
+            <div class="analytics-value" id="analyticsPumpUsage">---</div>
+            <div class="analytics-status" id="analyticsPumpStatus">---</div>
+          </div>
         </div>
       </div>
 
@@ -598,6 +698,107 @@
           refInd.textContent = 'STOPPED'
           refInd.className = 'status-indicator status-off'
         }
+        //----------------------------------------------------
+        // ANALYTICS — IMPROVED UI
+        //----------------------------------------------------
+        const nowSec = Math.floor(Date.now() / 1000)
+
+        // --- Soil ---
+        // --- Soil (REVERSED LOGIC: Higher ADC = More Dry) ---
+        if (d.soil_adc !== undefined) {
+          let soilPct = Math.round((d.soil_adc / 1023) * 100) // 0 = wet, 100 = dry
+
+          let soilStatus =
+            soilPct < 30
+              ? '🌧️ Wet'
+              : soilPct < 55
+              ? '👌 Moist'
+              : soilPct < 75
+              ? '⚠️ Drying'
+              : '🔥 Dry'
+
+          let badge =
+            soilPct < 30
+              ? 'badge-good'
+              : soilPct < 55
+              ? 'badge-info'
+              : soilPct < 75
+              ? 'badge-warning'
+              : 'badge-danger'
+
+          document.getElementById('analyticsSoil').textContent =
+            soilPct + '% Dry'
+          document.getElementById('analyticsSoilStatus').textContent =
+            soilStatus
+          document.getElementById('analyticsSoilStatus').className =
+            'analytics-status ' + badge
+        }
+
+        // --- Water Tank ---
+        if (d.water_adc !== undefined) {
+          let waterPct = Math.round((d.water_adc / 1023) * 100)
+          let waterStatus =
+            waterPct < 20
+              ? '🚨 Critical'
+              : waterPct < 50
+              ? '⚠️ Low'
+              : waterPct < 80
+              ? '👌 Good'
+              : '💧 Full'
+
+          let badge =
+            waterPct < 20
+              ? 'badge-danger'
+              : waterPct < 50
+              ? 'badge-warning'
+              : 'badge-good'
+
+          document.getElementById('analyticsWater').textContent = waterPct + '%'
+          document.getElementById('analyticsWaterStatus').textContent =
+            waterStatus
+          document.getElementById('analyticsWaterStatus').className =
+            'analytics-status ' + badge
+        }
+
+        // --- Rain ---
+        if (d.rain_adc !== undefined) {
+          let rainStrength = 100 - Math.round((d.rain_adc / 1023) * 100)
+          let rainStatus =
+            rainStrength < 10
+              ? '☀️ Clear'
+              : rainStrength < 30
+              ? '⛅ Light Moisture'
+              : rainStrength < 60
+              ? '🌦️ Possible Rain'
+              : '🌧️ Heavy Rain'
+
+          let badge =
+            rainStrength < 30
+              ? 'badge-good'
+              : rainStrength < 60
+              ? 'badge-warning'
+              : 'badge-info'
+
+          document.getElementById('analyticsRain').textContent =
+            rainStrength + '%'
+          document.getElementById('analyticsRainStatus').textContent =
+            rainStatus
+          document.getElementById('analyticsRainStatus').className =
+            'analytics-status ' + badge
+        }
+
+        // --- Pump ---
+        let pumpRunning = d.pump === 'ON'
+        document.getElementById('analyticsPumpUsage').textContent = pumpRunning
+          ? 'ON'
+          : 'OFF'
+
+        document.getElementById('analyticsPumpStatus').textContent = pumpRunning
+          ? 'Running'
+          : 'Stopped'
+
+        document.getElementById('analyticsPumpStatus').className =
+          'analytics-status ' + (pumpRunning ? 'badge-info' : 'badge-danger')
 
         // --- MODE BUTTONS ---
         updateButtons(d.mode || 'AUTO')
